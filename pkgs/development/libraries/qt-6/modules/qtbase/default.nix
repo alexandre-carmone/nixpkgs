@@ -89,9 +89,6 @@
   # options
   qttranslations ? null,
   fetchpatch,
-
-  # TODO: Clean up on `staging`.
-  llvmPackages,
 }:
 
 let
@@ -200,11 +197,7 @@ stdenv.mkDerivation {
     cmake
     ninja
   ]
-  ++ lib.optionals stdenv.hostPlatform.isDarwin [
-    moveBuildTree
-    # TODO: Clean up on `staging`.
-    llvmPackages.lld
-  ];
+  ++ lib.optionals stdenv.hostPlatform.isDarwin [ moveBuildTree ];
 
   propagatedNativeBuildInputs = [
     lndir
@@ -257,6 +250,12 @@ stdenv.mkDerivation {
     (fetchpatch {
       url = "https://github.com/qt/qtbase/commit/515cbbacfba9f4259c9c3b0714a31222c2b4c879.diff";
       hash = "sha256-93tzp4O7dZxRZv7ilN/gbQSVmaeOGmxpYgM7aomN0n8=";
+    })
+
+    # icon loading fix
+    (fetchpatch {
+      url = "https://github.com/qt/qtbase/commit/85420d5d4f78a6ba4cf70ed8ee092e0ef4fb9a54.diff";
+      hash = "sha256-BFL1mtwzEH0uUYbeUZDC2Fcp9pjBhtSYOaSxxVILe30=";
     })
   ];
 
@@ -319,8 +318,6 @@ stdenv.mkDerivation {
     # When this variable is not set, cmake tries to execute xcodebuild
     # to query the version.
     "-DQT_INTERNAL_XCODE_VERSION=0.1"
-    # TODO: Clean up on `staging`.
-    (lib.cmakeFeature "CMAKE_LINKER_TYPE" "LLD")
   ]
   ++ lib.optionals isCrossBuild [
     "-DQT_HOST_PATH=${pkgsBuildBuild.qt6.qtbase}"

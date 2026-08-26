@@ -22,6 +22,7 @@
   libxrender,
   python3,
   withXorg ? true,
+  withQuartz ? stdenv.hostPlatform.isDarwin,
 
   # for passthru.tests
   exiv2,
@@ -39,13 +40,13 @@ let
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "graphviz";
-  version = "14.1.2";
+  version = "15.1.1";
 
   src = fetchFromGitLab {
     owner = "graphviz";
     repo = "graphviz";
     tag = finalAttrs.version;
-    hash = "sha256-LkyiKl0ulS9ujEdVLfyeoc4CtjITd6CAc35IUtlHSfw=";
+    hash = "sha256-nDuLQfYu0fzJXS8/oH6Bv9gGuLK+FwwgbPQE+nVKelw=";
   };
 
   nativeBuildInputs = [
@@ -75,7 +76,8 @@ stdenv.mkDerivation (finalAttrs: {
     "--with-ltdl-lib=${libtool.lib}/lib"
     "--with-ltdl-include=${libtool}/include"
     (lib.withFeature withXorg "x")
-  ];
+  ]
+  ++ optional withQuartz "--with-quartz";
 
   enableParallelBuilding = true;
   strictDeps = true;

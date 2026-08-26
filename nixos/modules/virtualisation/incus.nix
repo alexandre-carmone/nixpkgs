@@ -61,7 +61,7 @@ let
       rsync
       skopeo
       squashfs-tools-ng
-      squashfsTools
+      squashfs-tools
       sshfs
       swtpm
       systemd
@@ -396,7 +396,7 @@ in
           abi <abi/4.0>,
           include <tunables/global>
 
-          include "/var/lib/incus/security/apparmor/profiles"
+          include if exists "/var/lib/incus/security/apparmor/profiles"
         '';
       };
       includes."abstractions/base" = ''

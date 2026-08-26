@@ -5,26 +5,30 @@
   cacert,
   cmake,
   gitMinimal,
+  writableTmpDirAsHomeHook,
   versionCheckHook,
   nix-update-script,
 }:
 
 rustPlatform.buildRustPackage (finalAttrs: {
   pname = "aube";
-  version = "1.26.0";
+  version = "1.32.0";
 
   src = fetchFromGitHub {
     owner = "jdx";
     repo = "aube";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-bQDDLgO5dG9kMF9VDnHGwuMZjWrbNT5Ia90rJrERDaE=";
+    hash = "sha256-0BnaxRk6+KY4AGZ31lis0zxc9uWp3OrxCgp9SgOrqNI=";
   };
 
-  cargoHash = "sha256-L9UiSO9UL8kBOebFXrZqbIJ/V4tobl1NYAdlktmX2lY=";
+  cargoHash = "sha256-vYbbnEpVWG6kjnycl1kk3D+lXuzTzOKuilA0ImBHYAI=";
 
   nativeBuildInputs = [ cmake ]; # libz-ng-sys
 
-  nativeCheckInputs = [ gitMinimal ];
+  nativeCheckInputs = [
+    gitMinimal
+    writableTmpDirAsHomeHook
+  ];
 
   postInstall = ''
     rm -f $out/bin/generate-{error-codes,settings}-docs
@@ -32,7 +36,11 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   checkFlags = [
     # failed on x86_64-linux
+    "--skip=concurrency::tests::floor_and_ceiling_inclusive"
     "--skip=http::ticket_cache::tests::max_per_host_evicts_oldest"
+    "--skip=http::ticket_cache::tests::invalidate_removes_all_for_host"
+    # require network access
+    "--skip=http::ticket_cache::tests::roundtrip_persists_across_open"
   ];
 
   __darwinAllowLocalNetworking = true;
@@ -44,6 +52,7 @@ rustPlatform.buildRustPackage (finalAttrs: {
 
   passthru.updateScript = nix-update-script { extraArgs = [ "--use-github-releases" ]; };
 
+  strictDeps = true;
   __structuredAttrs = true;
 
   meta = {

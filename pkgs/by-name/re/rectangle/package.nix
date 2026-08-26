@@ -5,8 +5,6 @@
   darwin,
   actool,
   ibtool,
-  # TODO: Clean up on `staging`
-  llvmPackages,
   makeWrapper,
   nix-update-script,
 }:
@@ -136,13 +134,13 @@ let
 in
 stdenv.mkDerivation (finalAttrs: {
   pname = "rectangle";
-  version = "0.96";
+  version = "0.99";
 
   src = fetchFromGitHub {
     owner = "rxhanson";
     repo = "Rectangle";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-3FDCptlNztmexfFDRD/XX9fVuEHVG+EzcrqksJeI+fo=";
+    hash = "sha256-Fz6vBw9fXcYsTza/vHewSw6O80mJIMvs+H9tuJ/dHBo=";
   };
 
   nativeBuildInputs = [
@@ -151,8 +149,6 @@ stdenv.mkDerivation (finalAttrs: {
     ibtool
     darwin.autoSignDarwinBinariesHook
     makeWrapper
-    # TODO: Clean up on `staging`
-    llvmPackages.lld
   ];
 
   dontConfigure = true;
@@ -165,8 +161,6 @@ stdenv.mkDerivation (finalAttrs: {
     commonSwiftFlags=(
       -O -disable-bridging-pch
       -Xlinker -platform_version -Xlinker macos -Xlinker 14.0 -Xlinker 26.0
-      # TODO: Clean up on `staging`
-      -use-ld=lld
     )
 
     nixLog "building Sparkle stub framework"
@@ -202,8 +196,6 @@ stdenv.mkDerivation (finalAttrs: {
     clang -dynamiclib "''${masObjFiles[@]}" \
       -framework AppKit -framework Carbon -framework Foundation \
       -install_name "@rpath/MASShortcut.framework/MASShortcut" \
-      # TODO: Clean up on `staging`
-      -fuse-ld=lld \
       -o "$buildDir/libMASShortcut.dylib"
 
     rectSwiftFiles=()

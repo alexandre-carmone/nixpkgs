@@ -4,7 +4,6 @@
   cmake,
   fetchFromGitHub,
   installShellFiles,
-  nix-update-script,
   stdenv,
 
   config,
@@ -46,6 +45,8 @@
 }:
 
 let
+  buildNumber = "10566";
+
   # It's necessary to consistently use backendStdenv when building with CUDA support,
   # otherwise we get libstdc++ errors downstream.
   # cuda imposes an upper bound on the gcc version
@@ -54,7 +55,6 @@ let
     cmakeBool
     cmakeFeature
     optionals
-    optionalString
     ;
 
   cudaBuildInputs = with cudaPackages; [
@@ -73,14 +73,17 @@ let
   ];
 
   vulkanBuildInputs = [
-    shaderc
+    spirv-headers
     vulkan-headers
     vulkan-loader
   ];
 in
 effectiveStdenv.mkDerivation (finalAttrs: {
   pname = "llama-cpp";
-  version = "9925";
+  version = "0.2.0";
+
+  __structuredAttrs = true;
+  strictDeps = true;
 
   outputs = [
     "out"
@@ -90,8 +93,8 @@ effectiveStdenv.mkDerivation (finalAttrs: {
   src = fetchFromGitHub {
     owner = "ggml-org";
     repo = "llama.cpp";
-    tag = "b${finalAttrs.version}";
-    hash = "sha256-yX8BrHA0fIgIozBGOXnN72KlfqIcR/mnO5ttUBLvxZE=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-6cK5BMCCEUWL+590+WbrRInH3eEnsZ/S5m71IIBgDsA=";
     leaveDotGit = true;
     postFetch = ''
       git -C "$out" rev-parse --short HEAD > $out/COMMIT
@@ -108,11 +111,14 @@ effectiveStdenv.mkDerivation (finalAttrs: {
     nodejs_latest
     npmHooks.npmConfigHook
     pkg-config
-    spirv-headers
   ]
   ++ optionals cudaSupport [
     cudaPackages.cuda_nvcc
     autoAddDriverRunpath
+  ]
+  # `glslc` is used at build time to compile the shaders
+  ++ optionals vulkanSupport [
+    shaderc
   ];
 
   buildInputs =
@@ -124,7 +130,7 @@ effectiveStdenv.mkDerivation (finalAttrs: {
     ++ [ openssl ];
 
   npmRoot = "tools/ui";
-  npmDepsHash = "sha256-6s9skw1wzEfm9QKktTqea3J+oudQAsS6O2VnZEMXAdw=";
+  npmDepsHash = "sha256-2Q7XhaLAArmviOLdQsNbYTfdyDE5pW9lR26cRHEVl9k=";
   npmDeps = fetchNpmDeps {
     name = "${finalAttrs.pname}-${finalAttrs.version}-npm-deps";
     inherit (finalAttrs) src patches;
@@ -137,7 +143,7 @@ effectiveStdenv.mkDerivation (finalAttrs: {
   preConfigure = ''
     prependToVar cmakeFlags "-DLLAMA_BUILD_COMMIT:STRING=$(cat COMMIT)"
     pushd ${finalAttrs.npmRoot}
-    LLAMA_BUILD_NUMBER=${finalAttrs.version} npm run build
+    LLAMA_BUILD_NUMBER=${buildNumber} npm run build
     popd
   '';
 
@@ -146,6 +152,7 @@ effectiveStdenv.mkDerivation (finalAttrs: {
     (cmakeBool "LLAMA_BUILD_EXAMPLES" false)
     (cmakeBool "LLAMA_BUILD_SERVER" true)
     (cmakeBool "LLAMA_BUILD_TESTS" (finalAttrs.finalPackage.doCheck or false))
+    (cmakeBool "LLAMA_BUILD_IS_DEV" false)
     (cmakeBool "LLAMA_OPENSSL" true)
     (cmakeBool "BUILD_SHARED_LIBS" true)
     (cmakeBool "GGML_BLAS" blasSupport)
@@ -155,7 +162,7 @@ effectiveStdenv.mkDerivation (finalAttrs: {
     (cmakeBool "GGML_METAL" metalSupport)
     (cmakeBool "GGML_RPC" rpcSupport)
     (cmakeBool "GGML_VULKAN" vulkanSupport)
-    (cmakeFeature "LLAMA_BUILD_NUMBER" finalAttrs.version)
+    (cmakeFeature "LLAMA_BUILD_NUMBER" buildNumber)
   ]
   ++ optionals cpuArchDynamicDispatch [
     # Build all CPU backend variants for runtime dynamic dispatch.
@@ -179,11 +186,6 @@ effectiveStdenv.mkDerivation (finalAttrs: {
   ++ optionals metalSupport [
     (cmakeFeature "CMAKE_C_FLAGS" "-D__ARM_FEATURE_DOTPROD=1")
     (cmakeBool "LLAMA_METAL_EMBED_LIBRARY" true)
-  ]
-  ++ optionals rpcSupport [
-    # This is done so we can move rpc-server out of bin because llama.cpp doesn't
-    # install rpc-server in their install target.
-    (cmakeBool "CMAKE_SKIP_BUILD_RPATH" true)
   ];
 
   # upstream plans on adding targets at the cmakelevel, remove those
@@ -195,20 +197,13 @@ effectiveStdenv.mkDerivation (finalAttrs: {
   ''
   + lib.optionalString (stdenv.buildPlatform.canExecute stdenv.hostPlatform) ''
     installShellCompletion --cmd llama-server --bash <($out/bin/llama-server --completion-bash)
-  ''
-  + optionalString rpcSupport "cp bin/rpc-server $out/bin/llama-rpc-server";
+  '';
 
   # the tests are failing as of 2025-08
   doCheck = false;
 
   passthru = {
-    updateScript = nix-update-script {
-      attrPath = "llama-cpp";
-      extraArgs = [
-        "--version-regex"
-        "b(.*)"
-      ];
-    };
+    updateScript = ./update.sh;
   };
 
   meta = {
@@ -222,6 +217,7 @@ effectiveStdenv.mkDerivation (finalAttrs: {
       xddxdd
       yuannan
     ];
+    teams = [ lib.teams.cuda ];
     platforms = lib.platforms.unix;
     badPlatforms = optionals (cudaSupport || openclSupport) lib.platforms.darwin;
     broken = metalSupport && !effectiveStdenv.hostPlatform.isDarwin;

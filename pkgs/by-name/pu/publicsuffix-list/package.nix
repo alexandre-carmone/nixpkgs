@@ -7,16 +7,18 @@
 
 stdenvNoCC.mkDerivation {
   pname = "publicsuffix-list";
-  version = "0-unstable-2026-05-13";
+  version = "0-unstable-2026-08-14";
 
   src = fetchFromGitHub {
     owner = "publicsuffix";
     repo = "list";
-    rev = "e452c7058d6946bd76952b128c12f5ce87a5acb8";
-    hash = "sha256-5D4RZAyJOL4hMU32Rmp3SYmjgqEtF36mZJr4YBG0k7E=";
+    rev = "a77cfe0674a4b05c6e2448c01f3cb2c965a1b6d8";
+    hash = "sha256-b/8hOFxgnoGQHGfgZ3Xz8H4Gu5ssxwHOCHswX2uQHMc=";
   };
 
   dontBuild = true;
+
+  strictDeps = true;
 
   installPhase = ''
     runHook preInstall
@@ -27,6 +29,8 @@ stdenvNoCC.mkDerivation {
   '';
 
   passthru.updateScript = unstableGitUpdater { };
+
+  __structuredAttrs = true;
 
   meta = {
     homepage = "https://publicsuffix.org/";

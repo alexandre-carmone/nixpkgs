@@ -19,15 +19,16 @@
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "klayout";
-  version = "0.30.8";
+  version = "0.30.10";
 
   src = fetchFromGitHub {
     owner = "KLayout";
     repo = "klayout";
     tag = "v${finalAttrs.version}";
-    hash = "sha256-RjMH6hrc0jyCLgG1D6cztBp5Fb3W5HgTxVTfI2bxgCs=";
+    hash = "sha256-ruM9+aD0k5RRpHMAzNNGtU5Xb2rmzz6yIsxxyHVcwRs=";
   };
 
+  __structuredAttrs = true;
   strictDeps = true;
 
   postPatch = ''
@@ -124,10 +125,10 @@ stdenv.mkDerivation (finalAttrs: {
   meta = {
     description = "High performance layout viewer and editor with support for GDS and OASIS";
     mainProgram = "klayout";
-    license = with lib.licenses; [ gpl2Plus ];
+    license = lib.licenses.gpl2Plus;
     homepage = "https://www.klayout.de/";
     changelog = "https://www.klayout.de/development.html#${finalAttrs.version}";
     platforms = lib.platforms.linux ++ lib.platforms.darwin;
-    maintainers = [ ];
+    maintainers = [ lib.maintainers.gonsolo ];
   };
 })
