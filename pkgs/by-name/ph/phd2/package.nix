@@ -2,7 +2,6 @@
   lib,
   stdenv,
   fetchFromGitHub,
-  fetchpatch2,
   cmake,
   ninja,
   pkg-config,
@@ -14,30 +13,24 @@
   glib,
   gtest,
   gtk3,
+  indilib,
   libnova,
   libusb1,
+  opencv,
   wxwidgets_3_2,
+  zlib,
 }:
 
 stdenv.mkDerivation (finalAttrs: {
   pname = "phd2";
-  version = "2.6.13";
+  version = "2.6.14";
 
   src = fetchFromGitHub {
     owner = "OpenPHDGuiding";
     repo = "phd2";
-    rev = "v${finalAttrs.version}";
-    sha256 = "sha256-GnT/tyk975caqESBSu4mdX5IWGi5O+RljLSd+CwoGWo=";
+    tag = "v${finalAttrs.version}";
+    hash = "sha256-+sDp/D0ovhmGAC2a9EtsN2nkt+1Yw/OaR/LJzS/9Ulg=";
   };
-
-  # fixes build error because of missing include
-  # is in master, should be removed with next release
-  patches = [
-    (fetchpatch2 {
-      url = "https://github.com/OpenPHDGuiding/phd2/commit/0927de6c8943fae7161457008b989bf72a05c638.patch?full_index=1";
-      hash = "sha256-yo5YdZ4B7jx6p4TqFZc7RJsutsWzeNBUfinFAd8es7E=";
-    })
-  ];
 
   nativeBuildInputs = [
     cmake
@@ -54,9 +47,12 @@ stdenv.mkDerivation (finalAttrs: {
     glib
     gtest
     gtk3
+    indilib
     libnova
     libusb1
+    opencv
     wxwidgets_3_2
+    zlib
   ];
 
   cmakeFlags = [
@@ -66,6 +62,7 @@ stdenv.mkDerivation (finalAttrs: {
     "-DUSE_SYSTEM_LIBUSB=ON"
     "-DUSE_SYSTEM_EIGEN3=ON"
     "-DUSE_SYSTEM_GTEST=ON"
+    "-DUSE_SYSTEM_LIBINDI=ON"
   ];
 
   # Fix broken wrapped name scheme by moving wrapped binary to where wrapper expects it
